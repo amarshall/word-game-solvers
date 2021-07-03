@@ -1,8 +1,10 @@
 use onig::Regex;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 
+type Chain<'a> = Vec<&'a str>;
 type Side = Vec<String>;
 
 struct Config {
@@ -26,10 +28,7 @@ impl State {
                 char_index.insert(chr, vec![idx]);
             }
         }
-        State {
-            words,
-            char_index,
-        }
+        State { words, char_index }
     }
 
     fn words_starting_with(&self, chr: &char) -> Vec<&str> {
@@ -83,21 +82,39 @@ fn read_valid_words(sides: &[Side]) -> State {
     state
 }
 
-fn chain<'a>(state: &'a State, word: &'a str, depth: usize) -> Vec<Vec<&'a str>> {
-    if depth == 1 {
-        return vec![vec![word]];
-    }
-    let last_chr = word.chars().last().unwrap();
+fn permute<'a>(state: &'a State, chain: &Vec<&'a str>) -> Vec<Vec<&'a str>> {
+    let last_chr = chain.last().unwrap().chars().last().unwrap();
     state
         .words_starting_with(&last_chr)
         .iter()
-        .flat_map(|next_word| chain(state, next_word, depth - 1))
-        .map(|chn| {
-            let mut c = chn.clone();
-            c.insert(0, word);
+        .map(|next_word| {
+            let mut c = chain.clone();
+            c.push(next_word);
             c
         })
         .collect()
+}
+
+fn solve<'a>(state: &'a State, config: &Config) -> Vec<Chain<'a>> {
+    let chrs = sides_to_chars(&config.sides);
+    let mut chains: Vec<Chain> = state.words.iter().map(|x| vec![x.as_ref()]).collect();
+    let mut solutions = vec![];
+    for depth in 1..=config.depth {
+        if depth > 1 {
+            chains = chains
+                .iter()
+                .flat_map(|chain| permute(&state, chain))
+                .collect();
+        }
+        log::info!("Expanding {} chains at depth {}...", chains.len(), depth);
+        solutions.par_extend(chains
+            .par_iter()
+            .filter(|chain| is_complete_chain(&chrs, chain))
+            .map(|v| v.to_owned())
+        );
+        log::info!("Found {} solutions at depth {}", solutions.len(), depth);
+    }
+    solutions
 }
 
 fn sides_to_chars(sides: &[Side]) -> HashSet<char> {
@@ -109,8 +126,8 @@ fn sides_to_chars(sides: &[Side]) -> HashSet<char> {
         .collect()
 }
 
-fn is_complete_chain(sides: &[Side], chain: &[&str]) -> bool {
-    let mut chrs = sides_to_chars(sides);
+fn is_complete_chain(chrs: &HashSet<char>, chain: &[&str]) -> bool {
+    let mut chrs = chrs.clone();
     for chr in chain.iter().map(|s| s.chars()).flatten() {
         chrs.remove(&chr);
     }
@@ -151,10 +168,7 @@ fn main() {
         .init();
     let config = argparse();
     let state = read_valid_words(&config.sides);
-    state
-        .words
+    solve(&state, &config)
         .iter()
-        .flat_map(|word| chain(&state, &word, config.depth))
-        .filter(|chn| is_complete_chain(&config.sides, &chn))
         .for_each(|chn| println!("{}", chn.join(" ")));
 }
