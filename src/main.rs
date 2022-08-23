@@ -1,6 +1,7 @@
 use onig::Regex;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 
@@ -59,7 +60,12 @@ fn is_valid_word(re: &Regex, word: &str) -> bool {
 }
 
 fn read_valid_words(sides: &[Side]) -> State {
-    let file = File::open("/usr/share/dict/words").unwrap();
+    let path = if let Ok(path) = env::var("WORDLIST") {
+        path
+    } else {
+        "/usr/share/dict/words".to_string()
+    };
+    let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
     let re = build_regex(sides);
 

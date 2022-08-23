@@ -23,9 +23,14 @@
           pkgs.rust-analyzer
           pkgs.rustfmt
         ];
-        shellHook = ''
-          export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
+        shellHook = let
+          wordlist = pkgs.runCommand "words.txt" {} ''
+            ${pkgs.glibc.bin}/bin/iconv -f iso8859-1 -t utf-8 ${pkgs.scowl}/share/dict/words.txt > $out
+          '';
+        in ''
+          export LIBCLANG_PATH=${pkgs.llvmPackages.libclang.lib}/lib
           export RUSTONIG_SYSTEM_LIBONIG=y
+          export WORDLIST=${wordlist}
         '';
       };
     });
