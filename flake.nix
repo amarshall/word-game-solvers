@@ -1,21 +1,15 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nickel }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [
-          (final: prev: { nickel = nickel.defaultPackage.${system}; })
-        ];
-      };
+      pkgs = import nixpkgs { inherit system; };
     in {
       devShell = pkgs.mkShell {
         packages = [
-          pkgs.bashInteractive
           pkgs.cargo
           pkgs.clippy
           pkgs.oniguruma
