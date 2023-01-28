@@ -1,15 +1,23 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    devshell = {
+      url = "github:numtide/devshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, devshell, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ devshell.overlay ];
+      };
     in {
-      devShell = pkgs.mkShell {
-        packages = [
+      devShell = pkgs.devshell.mkShell {
+        motd = "";
+        devshell.packages = [
           pkgs.cargo
           pkgs.clippy
           pkgs.oniguruma
@@ -17,15 +25,15 @@
           pkgs.rust-analyzer
           pkgs.rustfmt
         ];
-        shellHook = let
+        env = let
           wordlist = pkgs.runCommand "words.txt" {} ''
             ${pkgs.glibc.bin}/bin/iconv -f iso8859-1 -t utf-8 ${pkgs.scowl}/share/dict/words.txt > $out
           '';
-        in ''
-          export LIBCLANG_PATH=${pkgs.llvmPackages.libclang.lib}/lib
-          export RUSTONIG_SYSTEM_LIBONIG=y
-          export WORDLIST=${wordlist}
-        '';
+        in [
+          { name = "LIBCLANG_PATH"; value = "${pkgs.llvmPackages.libclang.lib}/lib"; }
+          { name = "RUSTONIG_SYSTEM_LIBONIG"; value = "y"; }
+          { name = "WORDLIST"; value = "${wordlist}"; }
+        ];
       };
     });
 }
