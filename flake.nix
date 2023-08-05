@@ -12,14 +12,15 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ devshell.overlay ];
+        overlays = [ devshell.overlays.default ];
       };
     in {
-      devShell = pkgs.devshell.mkShell {
+      devShells.default = pkgs.devshell.mkShell {
         motd = "";
         devshell.packages = [
           pkgs.cargo
           pkgs.clippy
+          pkgs.gcc
           pkgs.oniguruma
           pkgs.pkg-config
           pkgs.rust-analyzer
@@ -31,7 +32,8 @@
           '';
         in [
           { name = "LIBCLANG_PATH"; value = "${pkgs.llvmPackages.libclang.lib}/lib"; }
-          { name = "RUSTONIG_SYSTEM_LIBONIG"; value = "y"; }
+          { name = "PKG_CONFIG_PATH"; eval = "$DEVSHELL_DIR/lib/pkgconfig"; }
+          { name = "RUSTONIG_SYSTEM_LIBONIG"; value = "1"; }
           { name = "WORDLIST"; value = "${wordlist}"; }
         ];
       };
