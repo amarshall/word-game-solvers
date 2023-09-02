@@ -56,7 +56,7 @@ fn build_regex(sides: &[Side]) -> Regex {
 }
 
 fn is_valid_word(re: &Regex, word: &str) -> bool {
-    re.is_match(word)
+    word.len() >= 3 && re.is_match(word)
 }
 
 fn read_valid_words(sides: &[Side]) -> State {
