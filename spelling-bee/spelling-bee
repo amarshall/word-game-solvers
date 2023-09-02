@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# first param is the required letter, second param is all other letters
+# e.g. `spelling-bee x abcde`
+
+< "$WORDLIST" pcregrep '.{3,}' | pcregrep "$1" | pcregrep "^[$1$2]+$"
