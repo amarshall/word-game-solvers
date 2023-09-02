@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     devshell = {
       url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,7 +21,7 @@
           pkgs.cargo
           pkgs.clippy
           pkgs.gcc
-          pkgs.oniguruma
+          pkgs.oniguruma.dev
           pkgs.pkg-config
           pkgs.rust-analyzer
           pkgs.rustfmt
